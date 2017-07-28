@@ -126,7 +126,14 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 	double curr_angle;
 	double dest_x;
 	double dest_y;
-	Thread moveThread;
+	Runnable moveThread;
+
+	//variables for threading
+	boolean isDone = false;
+	boolean isRunning = false;
+
+	//variables for scanning
+	int frameNum = 0;
 
 	//debugging
 	final String TAG = "hahaha";
@@ -226,62 +233,64 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 					*/
 					dest_x = 120;
 					dest_y = 60;
-					moveThread = new Thread() {
-						public void onInterrupt(){
-							m_ioio_thread.move(1500);
-							m_ioio_thread.turn(1500);
-						}
+
+					isDone = false;
+					isRunning = false;
+					Runnable moveThread = new Runnable(){
 						public void run() {
-							//calculate desired angle
-							double vectorX = dest_x - curr_x;
-							double vectorY = dest_y - curr_y;
-							double desired_angle = Math.atan2(vectorY,vectorX)*180/Math.PI; //beta
-							Log.i("hahaha","desired_angle:"+desired_angle);
-							double angle_to_turn = desired_angle - curr_angle;
-							if(angle_to_turn > 180)
-								angle_to_turn -= 360;
-							else if (angle_to_turn < -180)
-								angle_to_turn += 360;
-							Log.i("hahaha","angle2turn:"+angle_to_turn);
-							if(!(angle_to_turn > -10 && angle_to_turn < 10)) {
-								if(angle_to_turn < 0) {
-									Log.i("hahaha","<0");
+							while(true) {
+								if(isRunning) {
+									//calculate desired angle
+									double vectorX = dest_x - curr_x;
+									double vectorY = dest_y - curr_y;
+									double desired_angle = Math.atan2(vectorY, vectorX) * 180 / Math.PI; //beta
+									Log.i("hahaha", "desired_angle:" + desired_angle);
+									double angle_to_turn = desired_angle - curr_angle;
+									if (angle_to_turn > 180)
+										angle_to_turn -= 360;
+									else if (angle_to_turn < -180)
+										angle_to_turn += 360;
+									Log.i("hahaha", "angle2turn:" + angle_to_turn);
+									if (!(angle_to_turn > -10 && angle_to_turn < 10)) {
+										if (angle_to_turn < 0) {
+											Log.i("hahaha", "<0");
+											m_ioio_thread.counter_left = 0;
+											while (m_ioio_thread.counter_left < (425 * Math.abs(angle_to_turn) / 360) && !isDone) { //454
+												Log.i("hahaha", "turning");
+												m_ioio_thread.turn(1700);
+											}
+											m_ioio_thread.turn(1500);
+										} else {
+											m_ioio_thread.counter_left = 0;
+											while (m_ioio_thread.counter_left < (490 * Math.abs(angle_to_turn) / 360) && !isDone) {
+												m_ioio_thread.turn(1300);
+											}
+											m_ioio_thread.turn(1500);
+										}
+									}
+									//calculate distance
+									double desired_distance = Math.sqrt(Math.pow(vectorX, 2) + Math.pow(vectorY, 2));
+									Log.i("hahaha", "desired_distance:" + desired_distance);
 									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < (425*Math.abs(angle_to_turn)/360) && !isInterrupted()) { //454
-										Log.i("hahaha", "turning");
-										m_ioio_thread.turn(1700);
+									while (m_ioio_thread.counter_left < (446 / 100 * desired_distance) && !isDone) {
+										m_ioio_thread.move(1600);
 									}
-									if(isInterrupted()){
-										onInterrupt();
-									}
-									m_ioio_thread.turn(1500);
+									m_ioio_thread.move(1500);
 								} else {
-									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < (490*Math.abs(angle_to_turn)/360) && !isInterrupted()) {
-										m_ioio_thread.turn(1300);
-									}
-									if(isInterrupted()){
-										onInterrupt();
-									}
+									m_ioio_thread.move(1500);
 									m_ioio_thread.turn(1500);
 								}
 							}
-							//calculate distance
-							double desired_distance = Math.sqrt(Math.pow(vectorX,2)+Math.pow(vectorY,2));
-							Log.i("hahaha","desired_distance:"+desired_distance);
-							m_ioio_thread.counter_left = 0;
-							while (m_ioio_thread.counter_left < (446/100*desired_distance) && !isInterrupted()) {
-								m_ioio_thread.move(1600);
-							}
-							if(isInterrupted()){
-								onInterrupt();
-							}
-							m_ioio_thread.move(1500);
 						}
 					};
+
+					Thread t1 = new Thread(moveThread);
+					t1.start();
 				} else {
 					v.setBackgroundResource(R.drawable.button_auto_off);
 					autoMode = false;
+					isRunning = false;
+					isDone = true;
 					/*
 					task_state = false;
 					try {
@@ -340,7 +349,10 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 	}
 
 	//Scan for QR code and save information to phone
-	public String scan(Mat frame) {
+	public String scan(Mat orig_frame) {
+		Mat frame = new Mat();
+		Imgproc.pyrDown(orig_frame, frame);
+		Imgproc.pyrDown(frame, frame);
 		Bitmap bMap = Bitmap.createBitmap(frame.width(), frame.height(), Bitmap.Config.ARGB_8888);
 		Utils.matToBitmap(frame, bMap);
 		int[] intArray = new int[bMap.getWidth()*bMap.getHeight()];  
@@ -376,11 +388,16 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 
 			Log.i("hahaha","curr_loc:"+curr_x+","+curr_y);
 
-			if(autoMode && !(curr_x == dest_x && curr_y == dest_y) && !(curr_x == old_x && curr_y == old_y)) {
-				moveThread.interrupt();
-				Log.i("hahaha","interrupt");
-				moveThread.run();
-				//moveFunction();
+			if(autoMode){
+				if(!(curr_x == dest_x && curr_y == dest_y) && !(curr_x == old_x && curr_y == old_y)){
+					Log.i("hahaha", "interrupt");
+					isRunning = true;
+					isDone = true;
+				}
+				if(curr_x == dest_x && curr_y == dest_y){
+					isDone = true;
+					isRunning = false;
+				}
 			}
 
 			Calendar calendar = Calendar.getInstance();
@@ -494,7 +511,12 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 		mSpectrum.copyTo(spectrumLabel);
 		if (autoMode) { // only move if autoMode is on
 			Log.i("hahaha","scanning");
-			scan(mRgba);
+			if(frameNum==0)
+				scan(mRgba);
+			if(frameNum >= 5)
+				frameNum = 0;
+			else
+				frameNum++;
 			/*
 			sendString(QR+",");
 			if(System.currentTimeMillis()-timeSinceLastCommand < 100){
