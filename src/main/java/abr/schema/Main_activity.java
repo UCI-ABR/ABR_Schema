@@ -29,6 +29,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -228,13 +229,21 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 					dest_y = 60;
 					moveThread = new Thread() {
 						public void onInterrupt(){
+							// added a while loop to move forward to adjust robot center after scanning the QR code
+							while (m_ioio_thread.counter_left < (446/100*16)){
+								m_ioio_thread.move(1580);
+							}
+
 							m_ioio_thread.move(1500);
 							m_ioio_thread.turn(1500);
 						}
 						public void run() {
 							//calculate desired angle
-							double vectorX = dest_x - curr_x;
-							double vectorY = dest_y - curr_y;
+							//double vectorX = dest_x - curr_x; // horizontal view
+							//double vectorY = dest_y - curr_y; // horizontal view
+							double vectorY = dest_x - curr_x; // vertical view
+							double vectorX = dest_y - curr_y; // vertical view
+
 							double desired_angle = Math.atan2(vectorY,vectorX)*180/Math.PI; //beta
 							Log.i("hahaha","desired_angle:"+desired_angle);
 							double angle_to_turn = desired_angle - curr_angle;
@@ -248,7 +257,7 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 									Log.i("hahaha","<0");
 									m_ioio_thread.counter_left = 0;
 									while (m_ioio_thread.counter_left < (425*Math.abs(angle_to_turn)/360) && !isInterrupted()) { //454
-										Log.i("hahaha", "turning");
+										Log.i("hahaha", "turning right");
 										m_ioio_thread.turn(1700);
 									}
 									if(isInterrupted()){
@@ -258,6 +267,7 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 								} else {
 									m_ioio_thread.counter_left = 0;
 									while (m_ioio_thread.counter_left < (490*Math.abs(angle_to_turn)/360) && !isInterrupted()) {
+										Log.i("hahaha", "turning left");
 										m_ioio_thread.turn(1300);
 									}
 									if(isInterrupted()){
@@ -271,6 +281,14 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 							Log.i("hahaha","desired_distance:"+desired_distance);
 							m_ioio_thread.counter_left = 0;
 							while (m_ioio_thread.counter_left < (446/100*desired_distance) && !isInterrupted()) {
+								// added to log the updated position
+								if (m_ioio_thread.counter_left % 5 == 0) {
+									double updated_x = curr_x + (double) m_ioio_thread.counter_left/4.46 * Math.sin(angle_to_turn);
+									double updated_y = curr_y + (double) m_ioio_thread.counter_left/4.46 * Math.cos(angle_to_turn);
+									positionLogNSave(updated_x, updated_y);
+								}
+
+								Log.i("hahaha", "moving forward");
 								m_ioio_thread.move(1600);
 							}
 							if(isInterrupted()){
@@ -304,8 +322,10 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 
 	public void moveFunction(){
 		//calculate desired angle
-		double vectorX = dest_x - curr_x;
-		double vectorY = dest_y - curr_y;
+		//double vectorX = dest_x - curr_x; // horizontal view
+		//double vectorY = dest_y - curr_y; // horizontal view
+		double vectorY = dest_x - curr_x; // vertical view
+		double vectorX = dest_y - curr_y; // vertical view
 		double desired_angle = Math.atan2(vectorY,vectorX)*180/Math.PI; //beta
 		Log.i("hahaha","desired_angle:"+desired_angle);
 		double angle_to_turn = desired_angle - curr_angle;
@@ -377,18 +397,19 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 			Log.i("hahaha","curr_loc:"+curr_x+","+curr_y);
 
 			if(autoMode && !(curr_x == dest_x && curr_y == dest_y) && !(curr_x == old_x && curr_y == old_y)) {
+				positionLogNSave(curr_x, curr_y); // added to log the newly detected QR code position
 				moveThread.interrupt();
 				Log.i("hahaha","interrupt");
 				moveThread.run();
 				//moveFunction();
 			}
 
+			/*
 			Calendar calendar = Calendar.getInstance();
 			java.util.Date now = calendar.getTime();
 			java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(now.getTime());
 			String time = currentTimestamp.toString();
 			String info = text;
-			/*
 			try {
 			    File newFolder = new File(Environment.getExternalStorageDirectory(), "Schema");
 			    if (!newFolder.exists()) {
@@ -436,6 +457,40 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 
 		return text;
 	}
+
+	// to log the current robot position along with the time stamp and append updated info to a file
+	public void positionLogNSave(double x, double y) {
+		Calendar calendar = Calendar.getInstance();
+		java.util.Date now = calendar.getTime();
+		java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(now.getTime());
+		String time = currentTimestamp.toString();
+		String info = "Time:" + time + ", Position:(" + String.valueOf(x) + "," + String.valueOf(y) + ")";
+		try {
+			File root = new File(Environment.getExternalStorageDirectory(), "Schema");
+			if (!root.exists()) {
+				root.mkdirs();
+			}
+			try {
+				File file = new File(root, "Schema_Position.txt");
+				if (!file.exists()) {
+					file.createNewFile();
+				}
+				FileOutputStream fos=new FileOutputStream(file,true); // make sure the mode allows appending material to the file
+				try {
+					byte[] b = info.getBytes();
+					fos.write(b);
+					fos.close();
+				} catch (IOException e) {
+					Log.e("app.main","Couldn't write to SD");
+				}
+			} catch (Exception ex) {
+				Log.e("app.main","Couldn't write to SD");
+			}
+		} catch (Exception e) {
+			Log.e("app.main","Couldn't write to SD");
+		}
+		Log.i("Saved",info);
+	}
 	
 	//Called whenever activity resumes from pause
 	@Override
@@ -480,6 +535,14 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 	//Called at every camera frame. Main controls of the robot movements are in this function
 	public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 		mRgba = inputFrame.rgba();
+
+		// added for vertical orientation of camera view
+		/*
+		Mat mRgbaT = mRgba.t();
+		Core.flip(mRgba.t(), mRgbaT, 1);
+		Imgproc.resize(mRgbaT, mRgbaT, mRgba.size());
+		*/
+
 		mDetector.process(mRgba);
 		
 		List<MatOfPoint> contours = mDetector.getContours();
