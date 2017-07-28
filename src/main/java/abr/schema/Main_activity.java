@@ -276,6 +276,11 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 									Log.i("hahaha", "desired_distance:" + desired_distance);
 									m_ioio_thread.counter_left = 0;
 									while (m_ioio_thread.counter_left < (446 / 100 * desired_distance) && !isDone) {
+										if (m_ioio_thread.counter_left % 5 == 0) {
+											double updated_x = curr_x + (double) m_ioio_thread.counter_left/4.46 * Math.sin(angle_to_turn);
+											double updated_y = curr_y + (double) m_ioio_thread.counter_left/4.46 * Math.cos(angle_to_turn);
+											positionLogNSave(updated_x, updated_y);
+										}
 										m_ioio_thread.move(1600);
 									}
 									m_ioio_thread.move(1500);
