@@ -230,7 +230,7 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 					moveThread = new Thread() {
 						public void onInterrupt(){
 							// added a while loop to move forward to adjust robot center after scanning the QR code
-							while (m_ioio_thread.counter_left < (446/100*16)){
+							while (m_ioio_thread.counter_left < (int) (4.46*16)){
 								m_ioio_thread.move(1580);
 							}
 
