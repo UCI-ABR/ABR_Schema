@@ -2,6 +2,7 @@ package abr.schema;
 
 import android.util.Log;
 
+import ioio.lib.api.AnalogInput;
 import ioio.lib.api.DigitalInput;
 import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.PulseInput;
@@ -14,6 +15,8 @@ public class IOIO_thread_rover_4wd extends IOIO_thread
     private PwmOutput pwm_left1, pwm_left2, pwm_right1,pwm_right2;
     private DigitalOutput dir_left1, dir_left2, dir_right1, dir_right2;
     private PulseInput encoder_leftA;
+    private AnalogInput ir1, ir2, ir3;
+    float ir1_reading, ir2_reading, ir3_reading;
     public boolean encoder_leftA_val;
     public int counter_left;
     float speed_left, speed_right;
@@ -29,6 +32,14 @@ public class IOIO_thread_rover_4wd extends IOIO_thread
             pwm_left2 = ioio_.openPwmOutput(5, 490); //motor channel 2: back left
             pwm_right1 = ioio_.openPwmOutput(7, 490); //motor channel 3: front right
             pwm_right2 = ioio_.openPwmOutput(10, 490); //motor channel 4: back right
+
+            ir1 = ioio_.openAnalogInput(42);
+            ir2 = ioio_.openAnalogInput(43);
+            ir3 = ioio_.openAnalogInput(44);
+
+            ir1_reading = 0.0f;
+            ir2_reading = 0.0f;
+            ir3_reading = 0.0f;
 
             dir_left1 = ioio_.openDigitalOutput(2, true);	//motor channel 1: front left
             dir_left2 = ioio_.openDigitalOutput(4, true);	//motor channel 2: back left
@@ -82,8 +93,10 @@ public class IOIO_thread_rover_4wd extends IOIO_thread
                 direction_right = false;
             }
             speed_right = Math.abs((float)(right_motor - 1500)/500);
-            Log.i("haha","sl:"+speed_left);
-            Log.i("haha","sr:"+speed_right);
+
+            ir1_reading = ir1.getVoltage();
+            ir2_reading = ir2.getVoltage();
+            ir3_reading = ir3.getVoltage();
 
             //This steering method will maximize the speed of the robot.
             /*
@@ -133,4 +146,12 @@ public class IOIO_thread_rover_4wd extends IOIO_thread
     {
         turn_val = value;
     }
+
+    public float get_ir1_reading() {
+        return 100*((1f/15.7f*(-ir1_reading))+0.22f);
+    }
+    public float get_ir2_reading() {
+        return 100*((1f/15.7f*(-ir2_reading))+0.22f);
+    }
+    public float get_ir3_reading() { return 100*((1f/15.7f*(-ir3_reading))+0.22f); }
 }
