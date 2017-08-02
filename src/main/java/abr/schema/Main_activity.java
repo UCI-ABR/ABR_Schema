@@ -275,7 +275,7 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 										}
 										m_ioio_thread.counter_left = 0;
 										m_ioio_thread.move(1500);
-										while (m_ioio_thread.counter_left < 525/2) {
+										while (m_ioio_thread.counter_left < 515/2) { // 525
 											m_ioio_thread.turn(1300);
 										}
 										m_ioio_thread.move(1600);
@@ -437,7 +437,7 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 		double encoderValue;
 		boolean toTurn;
 		if (action.equals("left")){
-			encoderValue = 525 / 360.0;  // 490 / 360.0
+			encoderValue = 515 / 360.0;  // 525 / 360.0 // 490 / 360.0
 			toTurn = true;
 		} else if (action.equals("right")) {
 			encoderValue = 454 / 360.0;
