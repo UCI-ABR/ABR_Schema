@@ -141,6 +141,9 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 	//variables for scanning
 	int frameNum = 0;
 
+	//variables for saving position
+	FileOutputStream fos;
+
 	//debugging
 	final String TAG = "hahaha";
 
@@ -601,11 +604,13 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 				if (!file.exists()) {
 					file.createNewFile();
 				}
-				FileOutputStream fos=new FileOutputStream(file,true); // make sure the mode allows appending material to the file
+				fos=new FileOutputStream(file,true); // make sure the mode allows appending material to the file
 				try {
 					byte[] b = info.getBytes();
 					fos.write(b);
-					fos.close();
+					if (!autoMode && file.exists()){
+						fos.close();
+					}
 				} catch (IOException e) {
 					Log.e("app.main","Couldn't write to SD");
 				}
