@@ -185,7 +185,7 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 					Calendar calendar = Calendar.getInstance();
 					java.util.Date now = calendar.getTime();
 					java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(now.getTime());
-					myFilename = currentTimestamp.toString()+".txt";
+					myFilename = currentTimestamp.toString()+".csv";
 					task_state = true;
 					v.setBackgroundResource(R.drawable.button_auto_on);
 					autoMode = true;
@@ -242,31 +242,15 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 					new Thread(readThread).start();
 					*/
 					waypoints = new ArrayList<Point>();
-					waypoints.add(new Point(0,0));
-					waypoints.add(new Point(0,60));
-					waypoints.add(new Point(0,120));
-					waypoints.add(new Point(0,180));
-					waypoints.add(new Point(0,240));
-					waypoints.add(new Point(60,240));
-					waypoints.add(new Point(60,180));
-					waypoints.add(new Point(60,120));
-					waypoints.add(new Point(60,60));
-					waypoints.add(new Point(60,0));
-					waypoints.add(new Point(120,0));
-					waypoints.add(new Point(120,60));
-					waypoints.add(new Point(120,120));
-					waypoints.add(new Point(120,180));
-					waypoints.add(new Point(120,240));
-					waypoints.add(new Point(180,240));
-					waypoints.add(new Point(180,180));
-					waypoints.add(new Point(180,120));
-					waypoints.add(new Point(180,60));
-					waypoints.add(new Point(180,0));
-					waypoints.add(new Point(240,0));
-					waypoints.add(new Point(240,60));
-					waypoints.add(new Point(240,120));
-					waypoints.add(new Point(240,180));
-					waypoints.add(new Point(240,240));
+					for (int i = 0; i<5; i++) {
+						for (int j = 0; j<5; j++) {
+							if (i % 2 == 0) {
+								waypoints.add(new Point((double)(i*60),(double)(j*60)));
+							} else {
+								waypoints.add(new Point((double)(i*60),(double)((4-j)*60)));
+							}
+						}
+					}
 
 					dest_x = waypoints.get(0).x;
 					dest_y = waypoints.get(0).y;
@@ -304,11 +288,8 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 										*/
 									}
 									// added a while loop to move forward to adjust robot center after scanning the QR code
-									m_ioio_thread.counter_left = 0;
 									m_ioio_thread.turn(1500);
-									while (m_ioio_thread.counter_left < (int) (4.46 * 13) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1600);
-									}
+									rotateOrMove("forward",1600,13);
 									m_ioio_thread.move(1500);
 									m_ioio_thread.turn(1500);
 									//calculate desired angle
@@ -317,24 +298,14 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 									double desired_angle = Math.atan2(vectorY, vectorX) * 180 / Math.PI; //beta
 									Log.i("hahaha", "desired_angle:" + desired_angle);
 									double angle_to_turn = desired_angle - curr_angle;
-									if (angle_to_turn > 180)
-										angle_to_turn -= 360;
-									else if (angle_to_turn < -180)
-										angle_to_turn += 360;
+									if (angle_to_turn > 180) {angle_to_turn -= 360;}
+									else if (angle_to_turn < -180) {angle_to_turn += 360;}
 									Log.i("hahaha", "angle2turn:" + angle_to_turn);
 									if (angle_to_turn < 0) {
-										m_ioio_thread.counter_left = 0;
-										while (m_ioio_thread.counter_left < (454 * Math.abs(angle_to_turn) / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) { //454
-											//Log.i("hahaha", "turning");
-											m_ioio_thread.turn(1700);
-										}
+										rotateOrMove("right",1700,Math.abs(angle_to_turn));
 										m_ioio_thread.turn(1500);
 									} else {
-										m_ioio_thread.counter_left = 0;
-										while (m_ioio_thread.counter_left < (525 * Math.abs(angle_to_turn) / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) { //490
-											m_ioio_thread.turn(1250);
-											//Log.i("hahaha", "turning");
-										}
+										rotateOrMove("left",1250,Math.abs(angle_to_turn));
 										m_ioio_thread.turn(1500);
 									}
 									//calculate distance
@@ -342,126 +313,84 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 									Log.i("hahaha", "desired_distance:" + desired_distance);
 									m_ioio_thread.counter_left = 0;
 									while (m_ioio_thread.counter_left < ((int)(4.46 * (desired_distance-13))) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										if (m_ioio_thread.counter_left % 5 == 0) {
-											double updated_x = curr_x + (double) m_ioio_thread.counter_left/4.46 * Math.cos(angle_to_turn); //4.46
-											double updated_y = curr_y + (double) m_ioio_thread.counter_left/4.46 * Math.sin(angle_to_turn); //4.46
-											positionLogNSave(myFilename,updated_x, updated_y);
-										}
+										double updated_x = curr_x + (double) m_ioio_thread.counter_left/4.46 * Math.cos(angle_to_turn); //4.46
+										double updated_y = curr_y + (double) m_ioio_thread.counter_left/4.46 * Math.sin(angle_to_turn); //4.46
+										positionLogNSave(myFilename,updated_x, updated_y);
 										m_ioio_thread.move(1600);
 										//Log.i("hahaha", "moving");
 									}
-									long startTime = System.currentTimeMillis();
-									while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1500);
-										m_ioio_thread.turn(1500);
-									}
+									pause();
 									//sweep left
-									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < (525 * 45 / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.turn(1300);
-									}
-									startTime = System.currentTimeMillis();
-									while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1500);
-										m_ioio_thread.turn(1500);
+									for(int i = 0; i < 2; i++) {
+										rotateOrMove("left",1300,22.5);
+										pause();
 									}
 									//sweep right
-									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < (454 * 90 / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.turn(1700);
-									}
-									startTime = System.currentTimeMillis();
-									while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1500);
-										m_ioio_thread.turn(1500);
+									for(int i = 0; i < 4; i++) {
+										rotateOrMove("right",1700,22.5);
+										pause();
 									}
 									//sweep left
-									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < (525 * 45 / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.turn(1300);
-									}
-									startTime = System.currentTimeMillis();
-									while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1500);
-										m_ioio_thread.turn(1500);
+									for(int i = 0; i < 2; i++) {
+										rotateOrMove("left",1300,22.5);
+										pause();
 									}
 									//go backward
-									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < 50 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1400);
-									}
-									startTime = System.currentTimeMillis();
-									while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1500);
-										m_ioio_thread.turn(1500);
-									}
+									rotateOrMove("backward",1400,10);
+									pause();
 									//sweep left
-									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < (525 * 45 / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.turn(1300);
-									}
-									startTime = System.currentTimeMillis();
-									while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1500);
-										m_ioio_thread.turn(1500);
+									for(int i = 0; i < 2; i++) {
+										rotateOrMove("left",1300,22.5);
+										pause();
 									}
 									//sweep right
-									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < (454 * 90 / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.turn(1700);
-									}
-									startTime = System.currentTimeMillis();
-									while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1500);
-										m_ioio_thread.turn(1500);
+									for(int i = 0; i < 4; i++) {
+										rotateOrMove("right",1700,22.5);
+										pause();
 									}
 									//sweep left
-									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < (525 * 45 / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.turn(1300);
+									for(int i = 0; i < 2; i++) {
+										rotateOrMove("left",1300,22.5);
+										pause();
 									}
-									startTime = System.currentTimeMillis();
-									while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-										m_ioio_thread.move(1500);
-										m_ioio_thread.turn(1500);
-									}
+
 									while(!isDone && m_ioio_thread.get_ir2_reading() > 10) {
 										ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
 										toneG.startTone(ToneGenerator.TONE_CDMA_ANSWER, 200);
 										//m_ioio_thread.move(1600);
 										//m_ioio_thread.turn(1500);
-										//sweep right
-										m_ioio_thread.counter_left = 0;
-										int randDist = 15 + (int)(Math.random()*(180-15));
-										while (m_ioio_thread.counter_left < (454 * randDist / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-											m_ioio_thread.turn(1700);
+
+										//sweep random direction
+										boolean randDir = Math.random() > .5;
+										int randAngle = 15 + (int)(Math.random()*(180-15));
+										for(int i = 0; i < (int)(Math.ceil(randAngle/22.5)); i++) {
+											if (randDir){
+												rotateOrMove("left",1300,22.5);
+											} else {
+												rotateOrMove("right",1700,22.5);
+											}
+											pause();
 										}
-										startTime = System.currentTimeMillis();
-										while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-											m_ioio_thread.move(1500);
-											m_ioio_thread.turn(1500);
+										int randDist = 20 + (int)(Math.random()*80);
+										for(int i = 0; i < (int)(Math.ceil(randDist/15)); i++) {
+											rotateOrMove("forward",1600,15);
+											pause();
 										}
-										//sweep left
-										m_ioio_thread.counter_left = 0;
-										randDist = 15 + (int)(Math.random()*(180-15));
-										while (m_ioio_thread.counter_left < (525 * randDist / 360) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-											m_ioio_thread.turn(1300);
-										}
-										startTime = System.currentTimeMillis();
-										while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-											m_ioio_thread.move(1500);
-											m_ioio_thread.turn(1500);
-										}
-										m_ioio_thread.counter_left = 0;
-										randDist = 20 + (int)(Math.random()*80);
-										while (m_ioio_thread.counter_left < ((int)(4.46 * randDist)) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-											m_ioio_thread.move(1600);
-										}
-										startTime = System.currentTimeMillis();
-										while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
-											m_ioio_thread.move(1500);
-											m_ioio_thread.turn(1500);
-										}
+
+										/*
+										//sweep right with random angle
+										int randAngle = 15 + (int)(Math.random()*(180-15));
+										rotateOrMove("right",1700,(double)randAngle);
+										pause();
+										//sweep left with random angle
+										randAngle = 15 + (int)(Math.random()*(180-15));
+										rotateOrMove("left",1300,(double)randAngle);
+										pause();
+										//go forward with random distance
+										int randDist = 20 + (int)(Math.random()*80);
+										rotateOrMove("forward",1600,(double)randDist);
+										pause();
+										*/
 									}
 									m_ioio_thread.move(1500);
 									m_ioio_thread.turn(1500);
@@ -498,6 +427,40 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 			buttonAuto.setBackgroundResource(R.drawable.button_auto_on);
 		} else {
 			buttonAuto.setBackgroundResource(R.drawable.button_auto_off);
+		}
+	}
+
+	public void rotateOrMove(String action, int speed, double amount){
+		double encoderValue;
+		boolean toTurn;
+		if (action.equals("left")){
+			encoderValue = 525 / 360.0;  // 490 / 360.0
+			toTurn = true;
+		} else if (action.equals("right")) {
+			encoderValue = 454 / 360.0;
+			toTurn = true;
+		} else if (action.equals("forward") || action.equals("backward")) {
+			encoderValue = 4.46;
+			toTurn = false;
+		} else {
+			encoderValue = 0;
+			toTurn = false;
+		}
+		m_ioio_thread.counter_left = 0;
+		while (m_ioio_thread.counter_left < (int)(encoderValue * amount) && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
+			if (toTurn){
+				m_ioio_thread.turn(speed);
+			} else {
+				m_ioio_thread.move(speed);
+			}
+		}
+	}
+
+	public void pause(){
+		long startTime = System.currentTimeMillis();
+		while(System.currentTimeMillis()-startTime < 1000 && !isDone && m_ioio_thread.get_ir2_reading() > 10) {
+			m_ioio_thread.move(1500);
+			m_ioio_thread.turn(1500);
 		}
 	}
 
@@ -623,9 +586,11 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 		double final_y = Math.round(y * 10.0) / 10.0;
 		Calendar calendar = Calendar.getInstance();
 		java.util.Date now = calendar.getTime();
-		java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(now.getTime());
-		String time = currentTimestamp.toString();
-		String info = "Time:" + time + ", Position:(" + String.valueOf(final_x) + "," + String.valueOf(final_y) + ")\n";
+		//java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(now.getTime());
+		//String time = currentTimestamp.toString();
+		long currentTimeMS = System.currentTimeMillis();
+		String time = Long.toString(currentTimeMS);
+		String info = time + "," + String.valueOf(final_x) + "," + String.valueOf(final_y) + "\n";
 		try {
 			File root = new File(Environment.getExternalStorageDirectory(), "Schema");
 			if (!root.exists()) {
@@ -697,6 +662,18 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 	public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 		mRgba = inputFrame.rgba();
 
+		// added to convert frame to grayscale and enhance contrast
+		/*
+		Mat frame = new Mat();
+		Imgproc.cvtColor(mRgba,frame,Imgproc.COLOR_RGB2GRAY);
+		double alpha = 1.0;
+		double beta = -5.0;
+		frame.convertTo(frame,-1,alpha,beta);
+		double thresh = 135;
+		double maxVal = 255;
+		Imgproc.threshold(frame,frame,thresh,maxVal,Imgproc.THRESH_BINARY);
+		*/
+
 		// added for vertical orientation of camera view
 		/*
 		Mat mRgbaT = mRgba.t();
@@ -720,12 +697,15 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 		if (autoMode) { // only move if autoMode is on
 			setText("ir2:"+m_ioio_thread.get_ir2_reading(),sonar2Text);
 			Log.i("hahaha","scanning");
+			/*
 			if(frameNum==0)
 				scan(mRgba);
 			if(frameNum >= 2)
 				frameNum = 0;
 			else
 				frameNum++;
+			*/
+
 			/*
 			sendString(QR+",");
 			if(System.currentTimeMillis()-timeSinceLastCommand < 100){
