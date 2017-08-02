@@ -603,8 +603,8 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 				File file = new File(root, filename);
 				if (!file.exists()) {
 					file.createNewFile();
+					fos=new FileOutputStream(file,true); // make sure the mode allows appending material to the file
 				}
-				fos=new FileOutputStream(file,true); // make sure the mode allows appending material to the file
 				try {
 					byte[] b = info.getBytes();
 					fos.write(b);
