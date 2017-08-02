@@ -702,6 +702,7 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 		if (autoMode) { // only move if autoMode is on
 			setText("ir2:"+m_ioio_thread.get_ir2_reading(),sonar2Text);
 			Log.i("hahaha","scanning");
+			scan(mRgba);
 			/*
 			if(frameNum==0)
 				scan(mRgba);
