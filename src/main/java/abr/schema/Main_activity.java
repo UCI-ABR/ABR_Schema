@@ -319,7 +319,8 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 									while (m_ioio_thread.counter_left < ((int)(4.46 * (desired_distance-13))) && !isDone && !(m_ioio_thread.get_ir2_reading() <= 10 || m_ioio_thread.get_ir1_reading() <= 10 || m_ioio_thread.get_ir3_reading() <= 10)) {
 										double updated_x = curr_x - (double) m_ioio_thread.counter_left/4.46 * Math.sin(angle_to_turn); //4.46
 										double updated_y = curr_y - (double) m_ioio_thread.counter_left/4.46 * Math.cos(angle_to_turn); //4.46
-										positionLogNSave(myFilename,updated_x, updated_y,(double) m_ioio_thread.counter_left/4.46,curr_x,curr_y,angle_to_turn,0);
+										positionLogNSave(myFilename,updated_x, updated_y,(double) m_ioio_thread.counter_left/4.46,
+												curr_x,curr_y,dest_x,dest_y, curr_angle, desired_angle, angle_to_turn, 0);
 										m_ioio_thread.move(1600);
 										//Log.i("hahaha", "moving");
 									}
@@ -451,7 +452,8 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 			toTurn = false;
 		}
 		m_ioio_thread.counter_left = 0;
-		while (m_ioio_thread.counter_left < (int)(encoderValue * amount) && !isDone && !(m_ioio_thread.get_ir2_reading() <= 10 || m_ioio_thread.get_ir1_reading() <= 10 || m_ioio_thread.get_ir3_reading() <= 10)) {
+		while (m_ioio_thread.counter_left < (int)(encoderValue * amount) && !isDone
+				&& !(m_ioio_thread.get_ir2_reading() <= 10 || m_ioio_thread.get_ir1_reading() <= 10 || m_ioio_thread.get_ir3_reading() <= 10)) {
 			if (toTurn){
 				m_ioio_thread.turn(speed);
 			} else {
@@ -462,7 +464,8 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 
 	public void pause(){
 		long startTime = System.currentTimeMillis();
-		while(System.currentTimeMillis()-startTime < 1000 && !isDone && !(m_ioio_thread.get_ir2_reading() <= 10 || m_ioio_thread.get_ir1_reading() <= 10 || m_ioio_thread.get_ir3_reading() <= 10)) {
+		while(System.currentTimeMillis()-startTime < 1000 && !isDone
+				&& !(m_ioio_thread.get_ir2_reading() <= 10 || m_ioio_thread.get_ir1_reading() <= 10 || m_ioio_thread.get_ir3_reading() <= 10)) {
 			m_ioio_thread.move(1500);
 			m_ioio_thread.turn(1500);
 		}
@@ -485,7 +488,8 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 		BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
 		Reader reader = new QRCodeReader();     
 	    
-		String text; 
+		String text;
+		double aimed_angle;
 		
 	    try {
 			Result result = reader.decode(bitmap);
@@ -516,26 +520,30 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 			Log.i("hahaha","curr_loc:"+curr_x+","+curr_y);
 
 			if(autoMode) {
-				if (!(curr_x == old_x && curr_y == old_y)){
-					positionLogNSave(myFilename,curr_x, curr_y, 0, curr_x, curr_y, 0, flavor); // added to log the newly detected QR code position
-					flavor = 0;
-				}
 				if (!(curr_x == dest_x && curr_y == dest_y) && !(curr_x == old_x && curr_y == old_y)) {
+					aimed_angle = Math.atan2(dest_y - curr_y, dest_x - curr_x) * 180 / Math.PI;
+					positionLogNSave(myFilename,curr_x, curr_y, 0, curr_x, curr_y, dest_x, dest_y, curr_angle, aimed_angle, aimed_angle-curr_angle, flavor);
 					isRunning = true;
 					isDone = true;
 				}
 				else if (curr_x == dest_x && curr_y == dest_y) {
 					if(waypoints.isEmpty()) {
+						positionLogNSave(myFilename,curr_x, curr_y, 0, curr_x, curr_y, dest_x, dest_y, curr_angle, 0, 0, flavor);
 						isDone = true;
 						isRunning = false;
 					} else {
 						dest_x = waypoints.get(0).x;
 						dest_y = waypoints.get(0).y;
 						waypoints.remove(0);
+
+						aimed_angle = Math.atan2(dest_y - curr_y, dest_x - curr_x) * 180 / Math.PI;
+						positionLogNSave(myFilename,curr_x, curr_y, 0, curr_x, curr_y, dest_x, dest_y, curr_angle, aimed_angle, aimed_angle-curr_angle, flavor);
+
 						isRunning = true;
 						isDone = true;
 					}
 				}
+				flavor = 0;
 			}
 			/*
 			Calendar calendar = Calendar.getInstance();
@@ -592,18 +600,27 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 	}
 
 	// to log the current robot position along with the time stamp and append updated info to a file
-	public void positionLogNSave(String filename,double x, double y, double distance, double qr_x, double qr_y, double angle, int flavor) {
+	public void positionLogNSave(String filename,double x, double y, double distance,
+								 double prev_qr_x, double prev_qr_y, double dest_qr_x, double dest_qr_y,
+								 double prev_angle, double aimed_angle, double turning_angle, int flavor) {
 		double final_x = Math.round(x * 10.0) / 10.0;
 		double final_y = Math.round(y * 10.0) / 10.0;
 		double final_distance = Math.round(distance * 100.0) / 100.0;
-		double final_angle = Math.round(angle * 100.0) / 100.0;
+		double final_prev_angle = Math.round(prev_angle * 100.0) / 100.0;
+		double final_aimed_angle = Math.round(aimed_angle * 100.0) / 100.0;
+		double final_turning_angle = Math.round(turning_angle * 100.0) / 100.0;
 		Calendar calendar = Calendar.getInstance();
 		java.util.Date now = calendar.getTime();
 		//java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(now.getTime());
 		//String time = currentTimestamp.toString();
 		long currentTimeMS = System.currentTimeMillis();
 		String time = Long.toString(currentTimeMS);
-		String info = time+","+String.valueOf(final_x)+","+String.valueOf(final_y)+","+String.valueOf(qr_x)+","+String.valueOf(qr_y)+","+String.valueOf(final_distance)+","+String.valueOf(final_angle)+","+String.valueOf(flavor)+"\n";
+		String naming = "time,updated_x,updated_y,prev_qr_x,prev_qr_y,dest_qr_x,dest_qr_y,"
+				+"distance_from_prev_qr,curr_angle,desired_angle,angle_to_turn,flavor\n";
+		String info = time+","+String.valueOf(final_x)+","+String.valueOf(final_y)+","
+				+String.valueOf(prev_qr_x)+","+String.valueOf(prev_qr_y)+","+String.valueOf(dest_qr_x)+","
+				+String.valueOf(dest_qr_y)+","+String.valueOf(final_distance)+","+String.valueOf(final_prev_angle)+","
+				+String.valueOf(final_aimed_angle)+","+String.valueOf(final_turning_angle)+","+String.valueOf(flavor)+"\n";
 		try {
 			File root = new File(Environment.getExternalStorageDirectory(), "Schema");
 			if (!root.exists()) {
@@ -614,6 +631,8 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 				if (!file.exists()) {
 					file.createNewFile();
 					fos=new FileOutputStream(file,true); // make sure the mode allows appending material to the file
+					byte[] n = naming.getBytes();
+					fos.write(n);
 				}
 				try {
 					byte[] b = info.getBytes();
