@@ -609,10 +609,12 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 		double final_prev_angle = Math.round(prev_angle * 100.0) / 100.0;
 		double final_aimed_angle = Math.round(aimed_angle * 100.0) / 100.0;
 		double final_turning_angle = Math.round(turning_angle * 100.0) / 100.0;
+		/*
 		Calendar calendar = Calendar.getInstance();
 		java.util.Date now = calendar.getTime();
-		//java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(now.getTime());
-		//String time = currentTimestamp.toString();
+		java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(now.getTime());
+		String time = currentTimestamp.toString();
+		*/
 		long currentTimeMS = System.currentTimeMillis();
 		String time = Long.toString(currentTimeMS);
 		String naming = "time,updated_x,updated_y,prev_qr_x,prev_qr_y,dest_qr_x,dest_qr_y,"
