@@ -293,7 +293,7 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 									}
 									// added a while loop to move forward to adjust robot center after scanning the QR code
 									m_ioio_thread.turn(1500);
-									rotateOrMove("forward",1600,15);  // 13
+									rotateOrMove("forward",1600,13);  // 15;13
 									m_ioio_thread.move(1500);
 									m_ioio_thread.turn(1500);
 									//calculate desired angle
@@ -316,9 +316,10 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 									double desired_distance = Math.sqrt(Math.pow(vectorX, 2) + Math.pow(vectorY, 2));
 									Log.i("hahaha", "desired_distance:" + desired_distance);
 									m_ioio_thread.counter_left = 0;
-									while (m_ioio_thread.counter_left < ((int)(4.46 * (desired_distance-13))) && !isDone && !(m_ioio_thread.get_ir2_reading() <= 10 || m_ioio_thread.get_ir1_reading() <= 10 || m_ioio_thread.get_ir3_reading() <= 10)) {
-										double updated_x = curr_x - (double) m_ioio_thread.counter_left/4.46 * Math.sin(angle_to_turn); //4.46
-										double updated_y = curr_y - (double) m_ioio_thread.counter_left/4.46 * Math.cos(angle_to_turn); //4.46
+									while (m_ioio_thread.counter_left < ((int)(4.46 * (desired_distance-10)))
+											&& !isDone && !(m_ioio_thread.get_ir2_reading() <= 10 || m_ioio_thread.get_ir1_reading() <= 10 || m_ioio_thread.get_ir3_reading() <= 10)) { // desired_distance - 13
+										double updated_x = curr_x + (double) m_ioio_thread.counter_left/4.46 * Math.cos(desired_angle); //4.46
+										double updated_y = curr_y + (double) m_ioio_thread.counter_left/4.46 * Math.sin(desired_angle); //4.46
 										positionLogNSave(myFilename,updated_x, updated_y,(double) m_ioio_thread.counter_left/4.46,
 												curr_x,curr_y,dest_x,dest_y, curr_angle, desired_angle, angle_to_turn, 0);
 										m_ioio_thread.move(1600);
