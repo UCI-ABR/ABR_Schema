@@ -512,12 +512,12 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 
 			curr_x = Double.parseDouble(words[0]);
 			curr_y = Double.parseDouble(words[1]);
+			Log.i("hahaha","curr_loc:"+curr_x+","+curr_y);
 			flavor = 0;
 			if (words.length > 2){
 				flavor = Integer.parseInt(words[2].substring(2));
+				Log.i("hahaha","curr_flavor:"+flavor);
 			}
-
-			Log.i("hahaha","curr_loc:"+curr_x+","+curr_y);
 
 			if(autoMode) {
 				if (!(curr_x == dest_x && curr_y == dest_y) && !(curr_x == old_x && curr_y == old_y)) {
