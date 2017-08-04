@@ -318,8 +318,8 @@ public class Main_activity extends Activity implements IOIOLooperProvider,CvCame
 									m_ioio_thread.counter_left = 0;
 									while (m_ioio_thread.counter_left < ((int)(4.46 * (desired_distance-10)))
 											&& !isDone && !(m_ioio_thread.get_ir2_reading() <= 10 || m_ioio_thread.get_ir1_reading() <= 10 || m_ioio_thread.get_ir3_reading() <= 10)) { // desired_distance - 13
-										double updated_x = curr_x + (double) m_ioio_thread.counter_left/4.46 * Math.cos(desired_angle); //4.46
-										double updated_y = curr_y + (double) m_ioio_thread.counter_left/4.46 * Math.sin(desired_angle); //4.46
+										double updated_x = curr_x + (double) m_ioio_thread.counter_left/4.46 * Math.cos(desired_angle*Math.PI/180); //4.46
+										double updated_y = curr_y + (double) m_ioio_thread.counter_left/4.46 * Math.sin(desired_angle*Math.PI/180); //4.46
 										positionLogNSave(myFilename,updated_x, updated_y,(double) m_ioio_thread.counter_left/4.46,
 												curr_x,curr_y,dest_x,dest_y, curr_angle, desired_angle, angle_to_turn, 0);
 										m_ioio_thread.move(1600);
